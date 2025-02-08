@@ -1,9 +1,10 @@
 {
   "version": 2,
+  "framework": "nextjs",
   "buildCommand": "npm run build",
   "installCommand": "npm install",
-  "framework": "nextjs",
   "env": {
-    "NEXT_PUBLIC_APP_URL": "https://artandgems.store"
+    "NEXT_PUBLIC_APP_URL": "https://artandgems.store",
+    "PRISMA_GENERATE": "true"
   }
 } 
