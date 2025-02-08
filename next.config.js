@@ -1,12 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   images: {
-    domains: [
-      'localhost',
-      'artandgems.store',
-      'storage.googleapis.com',
-      'images.unsplash.com'
-    ]
+    domains: ['res.cloudinary.com'],
   },
   env: {
     NEXT_PUBLIC_APP_URL: 'https://artandgems.store', // Substitua pelo seu domínio
