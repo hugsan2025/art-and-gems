@@ -1,33 +1,49 @@
-import { Metadata } from 'next'
-import { prisma } from '@/lib/prisma'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Image from 'next/image'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
+import AddToCartButton from '@/components/AddToCartButton'
+import type { Product } from '@/types'
 import ProductDetails from '@/components/ProductDetails'
 import { notFound } from 'next/navigation'
 
-export async function generateMetadata({ params }): Promise<Metadata> {
-  const product = await prisma.product.findUnique({
-    where: { id: params.id }
-  })
+export default function ProductPage({ params }: { params: { id: string } }) {
+  const [product, setProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  if (!product) {
-    return {
-      title: 'Produto não encontrado'
+  useEffect(() => {
+    async function loadProduct() {
+      try {
+        const response = await fetch(`/api/products/${params.id}`)
+        const data = await response.json()
+        
+        if (!data.success) {
+          notFound()
+        }
+        
+        setProduct(data.data)
+      } catch (error) {
+        console.error('Erro ao carregar produto:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-  }
 
-  return {
-    title: product.name,
-    description: product.description
-  }
-}
+    loadProduct()
+  }, [params.id])
 
-export default async function ProductPage({ params }: { params: { id: string } }) {
-  const product = await prisma.product.findUnique({
-    where: { id: params.id }
-  })
+  if (loading) {
+    return <div>Carregando...</div>
+  }
 
   if (!product) {
-    notFound()
+    return notFound()
   }
 
-  return <ProductDetails product={product} />
+  return (
+    <ProductDetails product={product} />
+  )
 } 

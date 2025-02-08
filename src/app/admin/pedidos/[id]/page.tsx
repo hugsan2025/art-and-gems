@@ -1,32 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import type { Order } from '@/types'
+import { useRouter } from 'next/navigation'
 
-interface OrderItem {
-  id: string
-  quantity: number
-  price: number
-  product: {
+interface PageProps {
+  params: {
     id: string
-    name: string
-    images: string[]
   }
-}
-
-interface Order {
-  id: string
-  customerName: string
-  customerEmail: string
-  customerPhone: string
-  total: number
-  status: 'PENDING' | 'PAID' | 'CANCELLED' | 'COMPLETED'
-  createdAt: string
-  items: OrderItem[]
 }
 
 const statusOptions = [
@@ -36,25 +22,26 @@ const statusOptions = [
   { value: 'CANCELLED', label: 'Cancelado' }
 ]
 
-export default function OrderDetailsPage({ params }: { params: { id: string } }) {
+export default function OrderDetailsPage({ params }: PageProps) {
+  const router = useRouter()
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchOrder()
-  }, [])
-
-  const fetchOrder = async () => {
+  const fetchOrder = useCallback(async () => {
     try {
-      const response = await fetch(`/api/admin/orders/${params.id}`)
+      const response = await fetch(`/api/orders/${params.id}`)
       const data = await response.json()
       setOrder(data)
     } catch (error) {
-      console.error('Erro ao buscar pedido:', error)
+      console.error('Error fetching order:', error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [params.id])
+
+  useEffect(() => {
+    fetchOrder()
+  }, [fetchOrder])
 
   const handleStatusChange = async (newStatus: string) => {
     try {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Plus, Pencil, Trash2 } from 'lucide-react'
 import type { DeliveryZone, Carrier } from '@/types'
@@ -12,32 +12,26 @@ interface PageProps {
   }
 }
 
-interface DeliveryZoneFormProps {
-  zone?: DeliveryZone
-  onSave: (zone: Omit<DeliveryZone, 'id'> & { id?: string }) => Promise<void>
-  onCancel: () => void
-}
-
 export default function CarrierZonesPage({ params }: PageProps) {
-  const [carrier, setCarrier] = useState<Carrier | null>(null)
+  const [zones, setZones] = useState<DeliveryZone[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editingZone, setEditingZone] = useState<DeliveryZone | null>(null)
 
-  useEffect(() => {
-    fetchCarrier()
-  }, [])
-
-  const fetchCarrier = async () => {
+  const fetchZones = useCallback(async () => {
     try {
-      const response = await fetch(`/api/admin/carriers/${params.id}`)
+      const response = await fetch(`/api/carriers/${params.id}/zones`)
       const data = await response.json()
-      setCarrier(data)
+      setZones(data)
     } catch (error) {
-      console.error('Erro ao buscar transportadora:', error)
+      console.error('Error fetching zones:', error)
     }
-  }
+  }, [params.id])
 
-  const handleSaveZone = async (zone: DeliveryZone) => {
+  useEffect(() => {
+    fetchZones()
+  }, [fetchZones])
+
+  const handleSaveZone = useCallback(async (zone: DeliveryZone) => {
     try {
       const url = zone.id
         ? `/api/admin/carriers/${params.id}/zones/${zone.id}`
@@ -52,16 +46,16 @@ export default function CarrierZonesPage({ params }: PageProps) {
       })
 
       if (response.ok) {
-        fetchCarrier()
+        await fetchCarrier()
         setShowForm(false)
         setEditingZone(null)
       }
     } catch (error) {
       console.error('Erro ao salvar zona:', error)
     }
-  }
+  }, [params.id, fetchCarrier])
 
-  const handleDeleteZone = async (zoneId: string) => {
+  const handleDeleteZone = useCallback(async (zoneId: string) => {
     if (!confirm('Tem certeza que deseja excluir esta zona?')) return
 
     try {
@@ -73,12 +67,17 @@ export default function CarrierZonesPage({ params }: PageProps) {
       )
 
       if (response.ok) {
-        fetchCarrier()
+        await fetchCarrier()
       }
     } catch (error) {
       console.error('Erro ao excluir zona:', error)
     }
-  }
+  }, [params.id, fetchCarrier])
+
+  const handleCancelForm = useCallback(() => {
+    setShowForm(false)
+    setEditingZone(null)
+  }, [])
 
   if (!carrier) {
     return <div>Carregando...</div>
@@ -103,10 +102,7 @@ export default function CarrierZonesPage({ params }: PageProps) {
           <DeliveryZoneForm
             zone={editingZone || undefined}
             onSave={handleSaveZone}
-            onCancel={() => {
-              setShowForm(false)
-              setEditingZone(null)
-            }}
+            onCancel={handleCancelForm}
           />
         </div>
       ) : (

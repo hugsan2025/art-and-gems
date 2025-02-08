@@ -5,8 +5,18 @@ import { Plus, Trash } from 'lucide-react'
 import Image from 'next/image'
 import ContentUploadModal from '@/components/admin/ContentUploadModal'
 
+interface Content {
+  id: string
+  type: string
+  url: string
+  description: string | null
+  section: string
+  createdAt: string
+  updatedAt: string
+}
+
 export default function ContentPage() {
-  const [contents, setContents] = useState([])
+  const [contents, setContents] = useState<Content[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [loading, setLoading] = useState(true)
 

@@ -33,7 +33,8 @@ export default function ValueProposition() {
             A Nossa Promessa
           </h2>
           <p className="text-lg text-gray-600">
-            Excelência e dedicação em cada pedra preciosa
+            &ldquo;Pedras preciosas são mais do que apenas beleza&rdquo;
+            <span className="block mt-2">&ldquo;Cada peça conta uma história única&rdquo;</span>
           </p>
         </div>
 

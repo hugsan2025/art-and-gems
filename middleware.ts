@@ -13,5 +13,10 @@ export function middleware(request: NextRequest) {
     )
   }
 
+  // Executa antes das requisições
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    // Verifica autenticação
+  }
+
   return NextResponse.next()
 }

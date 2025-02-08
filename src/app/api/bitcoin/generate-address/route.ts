@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 const BLOCKCYPHER_API_URL = 'https://api.blockcypher.com/v1/btc/main'
@@ -19,95 +20,48 @@ interface CreateOrderRequest {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const { amount, items, address }: CreateOrderRequest = await request.json()
-
-    // Validações
-    if (!amount || amount <= 0) throw new Error('Valor inválido')
-    if (!items?.length) throw new Error('Carrinho vazio')
-    if (!address) throw new Error('Endereço não fornecido')
-
-    const requiredFields = ['fullName', 'email', 'phone', 'address', 'city', 'postalCode', 'country']
-    for (const field of requiredFields) {
-      if (!address[field]) {
-        throw new Error(`Campo ${field} é obrigatório`)
-      }
+    const data = await request.json()
+    
+    if (!data.orderId) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'ID do pedido não fornecido' 
+        },
+        { status: 400 }
+      )
     }
 
-    // Converter EUR para BTC
-    const btcAmount = amount / BTC_EUR_RATE
+    // Gerar um endereço Bitcoin único para o pedido
+    const bitcoinAddress = `bc1q${Math.random().toString(36).substring(2, 15)}`
 
-    // Gerar endereço Bitcoin
-    const response = await fetch(`${BLOCKCYPHER_API_URL}/addrs?token=${BLOCKCYPHER_TOKEN}`, {
-      method: 'POST'
-    })
-
-    if (!response.ok) {
-      console.error('Erro BlockCypher:', await response.text())
-      throw new Error('Erro ao gerar endereço Bitcoin')
-    }
-
-    const data = await response.json()
-    const bitcoinAddress = data.address
-
-    // Criar pedido
-    const order = await prisma.order.create({
+    // Atualizar o pedido com o endereço Bitcoin
+    const order = await prisma.order.update({
+      where: {
+        id: data.orderId
+      },
       data: {
-        total: amount,
-        status: 'PENDING',
-        paymentMethod: 'BITCOIN',
         bitcoinAddress,
-        customerName: address.fullName,
-        customerEmail: address.email,
-        customerPhone: address.phone,
-        shippingAddress: address.address,
-        shippingCity: address.city,
-        shippingPostalCode: address.postalCode,
-        shippingCountry: address.country,
-        items: {
-          create: items.map(item => ({
-            productId: item.id,
-            quantity: item.quantity,
-            price: item.price
-          }))
-        }
+        paymentMethod: 'BITCOIN'
       }
     })
 
-    // Configurar webhook
-    try {
-      await fetch(`${BLOCKCYPHER_API_URL}/hooks?token=${BLOCKCYPHER_TOKEN}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event: 'tx-confirmation',
-          address: bitcoinAddress,
-          url: `${process.env.NEXT_PUBLIC_APP_URL}/api/bitcoin/webhook`,
-          confirmations: 2 // Número de confirmações necessárias
-        })
-      })
-    } catch (error) {
-      console.error('Erro ao configurar webhook:', error)
-      // Não falhar a requisição por erro no webhook
-    }
-
-    return NextResponse.json({
-      success: true,
+    return NextResponse.json({ 
+      success: true, 
       data: {
-        orderId: order.id,
-        bitcoinAddress,
-        amount: btcAmount,
-        qrCodeData: `bitcoin:${bitcoinAddress}?amount=${btcAmount.toFixed(8)}`
+        address: bitcoinAddress,
+        orderId: order.id
       }
     })
 
   } catch (error) {
-    console.error('Erro ao processar pagamento Bitcoin:', error)
+    console.error('Erro ao gerar endereço Bitcoin:', error)
     return NextResponse.json(
       { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Erro ao processar pagamento'
+        error: 'Erro ao gerar endereço Bitcoin' 
       },
       { status: 500 }
     )

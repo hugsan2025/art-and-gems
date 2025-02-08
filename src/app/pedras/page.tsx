@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import type { Product } from '@/types'
+import Image from 'next/image'
 
 const gemCategories = [
   { id: 'todas', name: 'Todas' },
@@ -89,13 +90,13 @@ export default function PedrasPage() {
             key={product.id}
             className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
           >
-            {product.images[0] && (
-              <img
-                src={product.images[0]}
-                alt={product.name}
-                className="w-full h-48 object-cover"
-              />
-            )}
+            <Image
+              src={product.images[0]}
+              alt={product.name}
+              width={500}
+              height={500}
+              className="w-full h-auto object-cover rounded-lg"
+            />
             <div className="p-4">
               <h2 className="text-xl font-semibold text-purple-600 mb-2">
                 {product.name}
@@ -147,9 +148,11 @@ export default function PedrasPage() {
               
               {selectedProduct.images[0] && (
                 <div className="mb-6">
-                  <img
+                  <Image
                     src={selectedProduct.images[0]}
                     alt={selectedProduct.name}
+                    width={500}
+                    height={500}
                     className="w-full h-64 object-cover rounded-lg"
                   />
                 </div>

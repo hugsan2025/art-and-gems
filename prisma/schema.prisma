@@ -16,18 +16,25 @@ model Product {
   type        String      // "STONE" ou "COURSE"
   slug        String      @unique
   featured    Boolean     @default(false)
-  categoryId  String
-  category    Category    @relation(fields: [categoryId], references: [id])
-  orderItems  OrderItem[]
-  analytics   Analytics[]
+  
   // Campos específicos para pedras
-  weight      Float?
+  gemFamily   String?     // CITRINE, EMERALD, etc
   origin      String?
   color       String?
   clarity     String?
-  gemFamily   GemFamily?
+  cut         String?     // Adicionado campo cut
+  weight      Float?
+
+  // Relações
+  category    Category    @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  orderItems  OrderItem[]
+  analytics   Analytics[]
+
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+
+  @@index([categoryId])
 }
 
 model Category {
@@ -55,8 +62,6 @@ model Order {
   shippingPostalCode String
   shippingCountry   String
   items             OrderItem[]
-  carrier           Carrier?    @relation(fields: [carrierId], references: [id])
-  carrierId         String?
 }
 
 model OrderItem {
@@ -101,34 +106,6 @@ enum GemFamily {
   OPAL
   GARNET
   OTHER
-}
-
-model Carrier {
-  id            String         @id @default(cuid())
-  name          String
-  nif           String        @unique
-  email         String
-  phone         String
-  address       String
-  postalCode    String
-  city          String
-  active        Boolean       @default(true)
-  orders        Order[]
-  deliveryZones DeliveryZone[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-}
-
-model DeliveryZone {
-  id          String   @id @default(cuid())
-  name        String
-  districts   String[]
-  basePrice   Float
-  weightPrice Float
-  carrier     Carrier  @relation(fields: [carrierId], references: [id])
-  carrierId   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 }
 
 model Content {

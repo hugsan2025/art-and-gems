@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
@@ -24,11 +24,7 @@ export default function EditCarrierPage({ params }: { params: { id: string } }) 
     active: true
   })
 
-  useEffect(() => {
-    fetchCarrier()
-  }, [])
-
-  const fetchCarrier = async () => {
+  const fetchCarrier = useCallback(async () => {
     try {
       const response = await fetch(`/api/admin/carriers/${params.id}`)
       const data = await response.json()
@@ -36,7 +32,11 @@ export default function EditCarrierPage({ params }: { params: { id: string } }) 
     } catch (error) {
       console.error('Erro ao buscar transportadora:', error)
     }
-  }
+  }, [params.id])
+
+  useEffect(() => {
+    fetchCarrier()
+  }, [fetchCarrier])
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>

@@ -1,31 +1,51 @@
 'use client'
 
+import { useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { CheckCircle } from 'lucide-react'
+import QRCode from 'qrcode.react'
 
 export default function OrderConfirmedPage() {
+  const searchParams = useSearchParams()
+  const orderId = searchParams.get('id')
+  const bitcoinAddress = searchParams.get('address')
+
   return (
-    <div className="container mx-auto px-4 py-16">
-      <div className="max-w-lg mx-auto text-center">
-        <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-sm">
+        <h1 className="text-2xl font-bold text-center mb-6">
           Pedido Confirmado!
         </h1>
-        <p className="text-gray-600 mb-8">
-          Obrigado pela sua compra. Você receberá um email com os detalhes do seu pedido.
-        </p>
-        <div className="space-y-4">
+        
+        <div className="text-center mb-8">
+          <p className="text-gray-600">
+            Seu pedido #{orderId} foi registrado com sucesso.
+          </p>
+        </div>
+
+        {bitcoinAddress && (
+          <div className="bg-gray-50 p-6 rounded-lg mb-8">
+            <h2 className="text-lg font-semibold mb-4">
+              Pagamento Bitcoin
+            </h2>
+            <div className="flex justify-center mb-4">
+              <QRCode value={bitcoinAddress} size={200} />
+            </div>
+            <p className="text-sm text-gray-600 text-center mb-2">
+              Envie o pagamento para o endereço:
+            </p>
+            <p className="text-sm bg-gray-100 p-3 rounded text-center font-mono break-all">
+              {bitcoinAddress}
+            </p>
+          </div>
+        )}
+
+        <div className="text-center">
           <Link
-            href="/pedras"
-            className="block w-full py-3 bg-gradient-to-r from-purple-600 to-purple-800 text-white rounded-lg hover:from-purple-700 hover:to-purple-900 transition-colors"
+            href="/"
+            className="text-purple-600 hover:text-purple-700"
           >
-            Continuar Comprando
-          </Link>
-          <Link
-            href="/meus-pedidos"
-            className="block w-full py-3 border-2 border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors"
-          >
-            Ver Meus Pedidos
+            Voltar para a Loja
           </Link>
         </div>
       </div>

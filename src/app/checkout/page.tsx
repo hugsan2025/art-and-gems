@@ -8,17 +8,7 @@ import { PayPalButtons } from '@paypal/react-paypal-js'
 import { Bitcoin, CreditCard, X, Copy, Info } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { QRCodeSVG } from 'qrcode.react'
-import type { PaymentData } from '@/types'
-
-interface ShippingAddress {
-  fullName: string
-  email: string
-  phone: string
-  address: string
-  city: string
-  postalCode: string
-  country: string
-}
+import type { PaymentData, ShippingAddress } from '@/types'
 
 const BitcoinPaymentModal = ({ 
   isOpen, 
@@ -132,6 +122,7 @@ export default function CheckoutPage() {
     postalCode: '',
     country: 'Portugal'
   })
+  const [bitcoinAddress, setBitcoinAddress] = useState<string>('')
 
   useEffect(() => {
     if (items.length === 0) {
@@ -160,26 +151,48 @@ export default function CheckoutPage() {
   const handleBitcoinPayment = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/bitcoin/generate-address', {
+      // 1. Criar o pedido primeiro
+      const orderResponse = await fetch('/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          amount: total,
-          items
+          items,
+          total,
+          address,
+          paymentMethod: 'BITCOIN'
         })
       })
 
-      const data = await response.json()
-      if (data.success) {
-        setPaymentData(data)
-        setShowBitcoinModal(true)
-      } else {
-        throw new Error(data.error)
+      const orderJson = await orderResponse.json()
+      if (!orderJson.success) {
+        throw new Error(orderJson.error)
       }
+
+      // 2. Gerar endereço Bitcoin para o pedido
+      const bitcoinResponse = await fetch('/api/bitcoin/generate-address', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          orderId: orderJson.data.id
+        })
+      })
+
+      const bitcoinJson = await bitcoinResponse.json()
+      if (!bitcoinJson.success) {
+        throw new Error(bitcoinJson.error)
+      }
+
+      // 3. Limpar carrinho e redirecionar
+      clearCart()
+      router.push(`/pedido-confirmado?id=${bitcoinJson.data.orderId}&address=${bitcoinJson.data.address}`)
+
     } catch (error) {
-      toast.error('Erro ao gerar endereço Bitcoin')
+      console.error('Erro ao processar pagamento Bitcoin:', error)
+      toast.error('Erro ao processar pagamento Bitcoin')
     } finally {
       setLoading(false)
     }
@@ -355,7 +368,7 @@ export default function CheckoutPage() {
                 className="w-full flex items-center justify-center gap-2 p-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50"
               >
                 <Bitcoin className="w-5 h-5" />
-                {loading ? 'Gerando endereço...' : 'Pagar com Bitcoin'}
+                {loading ? 'Processando...' : 'Pagar com Bitcoin'}
               </button>
             </div>
           </div>

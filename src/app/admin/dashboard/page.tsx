@@ -7,13 +7,13 @@ import SalesChart from '@/components/admin/SalesChart'
 import RecentOrders from '@/components/admin/RecentOrders'
 import TopProducts from '@/components/admin/TopProducts'
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer
+  _BarChart as BarChart,
+  _Bar as Bar,
+  _XAxis as XAxis,
+  _YAxis as YAxis,
+  _CartesianGrid as CartesianGrid,
+  _Tooltip as Tooltip,
+  _ResponsiveContainer as ResponsiveContainer
 } from 'recharts'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { MessageCircle, X, Send, Paperclip } from 'lucide-react'
 import { uploadToCloudinary } from '@/lib/cloudinary'
 import type { Product } from '@/types'
+import Image from 'next/image'
 
 interface Message {
   id: string
@@ -224,12 +225,10 @@ export default function SupportChat() {
   }
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+    if (messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [messages.length])
 
   const addMessage = (type: 'user' | 'ai', content: string) => {
     setMessages(prev => [...prev, {
@@ -446,6 +445,28 @@ export default function SupportChat() {
                       : 'bg-gray-100 text-gray-800'
                   }`}
                 >
+                  {msg.type === 'user' && (
+                    <div className="relative w-8 h-8 rounded-full overflow-hidden">
+                      <Image
+                        src="/user-avatar.png"
+                        alt="User Avatar"
+                        width={40}
+                        height={40}
+                        className="rounded-full"
+                      />
+                    </div>
+                  )}
+                  {msg.type === 'ai' && (
+                    <div className="relative w-8 h-8 rounded-full overflow-hidden">
+                      <Image
+                        src="/bot-avatar.png"
+                        alt="Bot Avatar"
+                        width={40}
+                        height={40}
+                        className="rounded-full"
+                      />
+                    </div>
+                  )}
                   {msg.content}
                   {msg.type === 'ai' && suggestions.length > 0 && (
                     <div className="mt-3 space-y-2">

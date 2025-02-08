@@ -2,7 +2,9 @@
 
 import { useCart } from '@/contexts/CartContext'
 import { toast } from 'react-hot-toast'
-import { Product } from '@prisma/client'
+import { Product } from '@/contexts/CartContext'
+import Image from 'next/image'
+import { useState } from 'react'
 
 interface ProductDetailsProps {
   product: Product
@@ -10,6 +12,7 @@ interface ProductDetailsProps {
 
 export default function ProductDetails({ product }: ProductDetailsProps) {
   const { addToCart } = useCart()
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
   const handleAddToCart = () => {
     if (addToCart) {
@@ -21,15 +24,37 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="md:flex">
-          {/* Imagem do Produto */}
-          <div className="md:flex-shrink-0 md:w-1/2">
-            {product.images[0] && (
-              <img
-                src={product.images[0]}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-4">
+            {/* Imagem Principal */}
+            <div className="relative aspect-square rounded-lg overflow-hidden">
+              <Image
+                src={selectedImage || '/images/placeholder.jpg'}
                 alt={product.name}
-                className="w-full h-96 object-cover"
+                fill
+                className="object-cover"
+                priority
               />
+            </div>
+
+            {/* Miniaturas */}
+            {product.images && product.images.length > 1 && (
+              <div className="grid grid-cols-4 gap-2">
+                {product.images.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImage(image)}
+                    className="relative aspect-square rounded-lg overflow-hidden"
+                  >
+                    <Image
+                      src={image}
+                      alt={`${product.name} - ${index + 1}`}
+                      fill
+                      className="object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 
