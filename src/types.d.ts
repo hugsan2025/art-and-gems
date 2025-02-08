@@ -1,6 +1,7 @@
 /// <reference types="react" /> 
 
 export interface Product {
+  clarity(clarity: any): unknown
   id: string
   name: string
   description: string
