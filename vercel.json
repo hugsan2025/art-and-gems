@@ -1,7 +1,7 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "buildCommand": "npm run build",
+  "buildCommand": "next build",
   "installCommand": "npm install",
   "env": {
     "NEXT_PUBLIC_APP_URL": "https://artandgems.store",
