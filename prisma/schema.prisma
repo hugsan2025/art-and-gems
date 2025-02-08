@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  name        String
+  description String      @db.Text
+  price       Float
+  images      String[]
+  type        String      // "STONE" ou "COURSE"
+  slug        String      @unique
+  featured    Boolean     @default(false)
+  categoryId  String
+  category    Category    @relation(fields: [categoryId], references: [id])
+  orderItems  OrderItem[]
+  analytics   Analytics[]
+  // Campos específicos para pedras
+  weight      Float?
+  origin      String?
+  color       String?
+  clarity     String?
+  gemFamily   GemFamily?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Order {
+  id                String      @id @default(cuid())
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  status            String
+  total             Float
+  paymentMethod     String
+  bitcoinAddress    String?
+  customerName      String
+  customerEmail     String
+  customerPhone     String
+  shippingAddress   String
+  shippingCity      String
+  shippingPostalCode String
+  shippingCountry   String
+  items             OrderItem[]
+  carrier           Carrier?    @relation(fields: [carrierId], references: [id])
+  carrierId         String?
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  quantity  Int
+  price     Float
+  order     Order    @relation(fields: [orderId], references: [id])
+  orderId   String
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Analytics {
+  id          String   @id @default(cuid())
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id])
+  type        AnalyticsType
+  createdAt   DateTime @default(now())
+}
+
+enum AnalyticsType {
+  PAGE_VIEW
+  PRODUCT_VIEW
+  CLICK
+  PURCHASE
+}
+
+enum GemFamily {
+  CITRINE
+  EMERALD
+  RUBY
+  KUNZITE
+  SAPPHIRE
+  OPAL
+  GARNET
+  OTHER
+}
+
+model Carrier {
+  id            String         @id @default(cuid())
+  name          String
+  nif           String        @unique
+  email         String
+  phone         String
+  address       String
+  postalCode    String
+  city          String
+  active        Boolean       @default(true)
+  orders        Order[]
+  deliveryZones DeliveryZone[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model DeliveryZone {
+  id          String   @id @default(cuid())
+  name        String
+  districts   String[]
+  basePrice   Float
+  weightPrice Float
+  carrier     Carrier  @relation(fields: [carrierId], references: [id])
+  carrierId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Content {
+  id          String   @id @default(cuid())
+  type        String   // 'image' ou 'video'
+  url         String   @db.Text
+  description String?  @db.Text
+  section     String   // 'about' ou 'gallery'
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([section])
+} 
