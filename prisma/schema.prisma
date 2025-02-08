@@ -7,32 +7,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  price       Float
+  imageUrl    String
+  stock       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model User {
   id        String   @id @default(cuid())
   name      String
   email     String   @unique
   password  String
   role      String   @default("USER")
-  orders    Order[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-model Product {
-  id          String      @id @default(cuid())
-  name        String
-  description String
-  price       Float
-  imageUrl    String
-  images      String[]
-  category    String
-  weight      Float?
-  clarity     String?
-  cut         String?
-  stock       Int         @default(0)
-  orderItems  OrderItem[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
 }
 
 model Order {
@@ -84,7 +77,7 @@ model DeliveryZone {
 
 model Category {
   id          String    @id @default(cuid())
-  name        String    @unique
+  name        String
   description String?
   products    Product[]
   createdAt   DateTime  @default(now())
@@ -92,17 +85,18 @@ model Category {
 }
 
 model Analytics {
-  id          String   @id @default(cuid())
-  productId   String?
-  product     Product? @relation(fields: [productId], references: [id])
-  type        AnalyticsType
-  createdAt   DateTime @default(now())
+  id             String        @id @default(cuid())
+  description    String?
+  viewedProducts Product[]     @relation("ProductViews")
+  cartProducts   Product[]     @relation("ProductCartAdds")
+  type           AnalyticsType
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 }
 
 enum AnalyticsType {
-  PAGE_VIEW
-  PRODUCT_VIEW
-  CLICK
+  VIEW
+  CART_ADD
   PURCHASE
 }
 
