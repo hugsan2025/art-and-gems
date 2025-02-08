@@ -1,6 +1,19 @@
 {
-  "extends": "next/core-web-api",
+  "extends": ["next/core-web-vitals"],
+  "plugins": ["react", "@typescript-eslint"],
   "rules": {
-    "react/no-unescaped-entities": "off"
+    "react/no-unescaped-entities": "off",
+    "react/jsx-no-undef": "error",
+    "react-hooks/exhaustive-deps": "error",
+    "@next/next/no-img-element": "error",
+    "@typescript-eslint/no-unused-vars": "error",
+    "import/no-unresolved": "error",
+    "react/jsx-uses-react": "error",
+    "react/jsx-uses-vars": "error"
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
   }
 } 
