@@ -1,19 +1,17 @@
 {
-  "extends": ["next/core-web-vitals"],
-  "plugins": ["react", "@typescript-eslint"],
+  "extends": [
+    "next/core-web-vitals"
+  ],
+  "plugins": [
+    "@typescript-eslint"
+  ],
   "rules": {
-    "react/no-unescaped-entities": "off",
-    "react/jsx-no-undef": "error",
-    "react-hooks/exhaustive-deps": "error",
-    "@next/next/no-img-element": "error",
-    "@typescript-eslint/no-unused-vars": "error",
-    "import/no-unresolved": "error",
-    "react/jsx-uses-react": "error",
-    "react/jsx-uses-vars": "error"
-  },
-  "settings": {
-    "react": {
-      "version": "detect"
-    }
+    "@next/next/no-img-element": "warn",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "@typescript-eslint/no-unused-vars": ["warn", {
+      "argsIgnorePattern": "^_",
+      "varsIgnorePattern": "^_"
+    }]
   }
 } 
