@@ -7,16 +7,11 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
-    "postinstall": "prisma generate",
-    "vercel-build": "prisma generate && prisma db push && next build"
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@paypal/react-paypal-js": "^8.8.2",
     "@prisma/client": "^5.8.1",
-    "@types/node": "^20.11.17",
-    "@types/react": "^18.2.55",
-    "@types/react-dom": "^18.2.19",
     "cloudinary": "^2.5.1",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.330.0",
@@ -27,9 +22,7 @@
     "react-dom": "^18",
     "react-dropzone": "^14.3.5",
     "react-hot-toast": "^2.5.1",
-    "recharts": "^2.15.1",
-    "typescript": "^5.3.3",
-    "prisma": "^5.8.1"
+    "recharts": "^2.15.1"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -39,7 +32,7 @@
     "eslint": "^8",
     "eslint-config-next": "14.1.0",
     "postcss": "^8",
-    "prisma": "^6.3.1",
+    "prisma": "^5.8.1",
     "tailwindcss": "^3.3.0",
     "typescript": "^5"
   }
