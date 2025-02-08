@@ -4,40 +4,24 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "postinstall": "prisma generate"
+    "lint": "next lint"
   },
   "dependencies": {
-    "@headlessui/react": "^1.7.17",
-    "@heroicons/react": "^2.0.18",
-    "@prisma/client": "^5.22.0",
-    "@stripe/stripe-js": "^2.1.7",
-    "@tailwindcss/aspect-ratio": "^0.4.2",
-    "@tailwindcss/forms": "^0.5.6",
-    "@tailwindcss/typography": "^0.5.10",
-    "@types/node": "^20.8.2",
-    "@types/react": "^18.2.24",
-    "@types/react-dom": "^18.2.8",
-    "autoprefixer": "^10.4.16",
-    "eslint": "^8.50.0",
-    "eslint-config-next": "^13.5.4",
-    "next": "^15.1.6",
-    "next-auth": "^4.23.2",
-    "postcss": "^8.4.31",
-    "prisma": "^5.22.0",
+    "@netlify/plugin-nextjs": "^4.41.3",
+    "@prisma/client": "^6.3.1",
+    "next": "^13.4.19",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "stripe": "^13.8.0",
-    "tailwindcss": "^3.3.3",
-    "typescript": "^5.2.2"
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@netlify/plugin-nextjs": "^5.9.4",
-    "@typescript-eslint/eslint-plugin": "^6.7.4",
-    "@typescript-eslint/parser": "^6.7.4",
-    "eslint-plugin-react": "^7.33.2",
-    "netlify-cli": "^18.0.4"
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "autoprefixer": "^10.0.0",
+    "postcss": "^8.0.0",
+    "prisma": "^6.3.1",
+    "tailwindcss": "^3.0.0",
+    "typescript": "^5.0.0"
   }
 }

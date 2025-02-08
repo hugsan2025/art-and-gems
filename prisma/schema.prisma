@@ -8,14 +8,23 @@ datasource db {
 }
 
 model Product {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   name        String
   description String
   price       Float
   imageUrl    String
-  stock       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  images      String[]
+  category    String
+  weight      Float?
+  clarity     String?
+  cut         String?
+  stock       Int         @default(0)
+  orderItems  OrderItem[]
+  categories  Category[]
+  viewedIn    Analytics[] @relation("ProductViews")
+  addedIn     Analytics[] @relation("ProductCartAdds")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
 model User {
@@ -24,6 +33,7 @@ model User {
   email     String   @unique
   password  String
   role      String   @default("USER")
+  orders    Order[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

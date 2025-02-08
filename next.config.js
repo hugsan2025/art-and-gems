@@ -8,9 +8,6 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_APP_URL: 'https://artandgems.netlify.app',
     DATABASE_URL: process.env.DATABASE_URL,
-  },
-  experimental: {
-    serverActions: true
   }
 }
 
