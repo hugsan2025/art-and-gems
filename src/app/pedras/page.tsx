@@ -62,7 +62,7 @@ export default function PedrasPage() {
 
     if (filters.weight.length > 0) {
       filtered = filtered.filter(product => 
-        product.weight && filters.weight.includes(product.weight.toString())
+        'weight' in product && filters.weight.includes(String(product.weight))
       )
     }
 
