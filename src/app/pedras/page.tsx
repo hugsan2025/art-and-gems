@@ -17,27 +17,86 @@ const gemCategories = [
   { id: 'GARNET', name: 'Granada' }
 ]
 
+interface FilterState {
+  weight: string[]
+  clarity: string[]
+  cut: string[]
+}
+
 export default function PedrasPage() {
   const [products, setProducts] = useState<Product[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
+  const [filters, setFilters] = useState<FilterState>({
+    weight: [],
+    clarity: [],
+    cut: []
+  })
   const [loading, setLoading] = useState(true)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const searchParams = useSearchParams()
   const category = searchParams.get('category') || 'todas'
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('/api/products?category=stones')
+        if (!response.ok) {
+          throw new Error('Failed to fetch products')
+        }
+        const data = await response.json()
+        setProducts(data)
+        setFilteredProducts(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setLoading(false)
+      }
+    }
+
     fetchProducts()
   }, [])
 
-  const fetchProducts = async () => {
-    try {
-      const response = await fetch('/api/products')
-      const data = await response.json()
-      setProducts(data.data || [])
-    } catch (error) {
-      console.error('Erro ao buscar produtos:', error)
-    } finally {
-      setLoading(false)
+  const applyFilters = () => {
+    let filtered = products
+
+    if (filters.weight.length > 0) {
+      filtered = filtered.filter(product => 
+        product.weight && filters.weight.includes(product.weight.toString())
+      )
     }
+
+    if (filters.clarity.length > 0) {
+      filtered = filtered.filter(product => 
+        product.clarity && filters.clarity.includes(product.clarity)
+      )
+    }
+
+    if (filters.cut.length > 0) {
+      filtered = filtered.filter(product => 
+        product.cut && filters.cut.includes(product.cut)
+      )
+    }
+
+    setFilteredProducts(filtered)
+  }
+
+  useEffect(() => {
+    applyFilters()
+  }, [filters]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const toggleFilter = (type: keyof FilterState, value: string) => {
+    setFilters(prev => {
+      const current = prev[type]
+      const updated = current.includes(value)
+        ? current.filter(item => item !== value)
+        : [...current, value]
+      
+      return {
+        ...prev,
+        [type]: updated
+      }
+    })
   }
 
   const handleProductClick = (product: Product) => {
@@ -48,16 +107,16 @@ export default function PedrasPage() {
     setSelectedProduct(null)
   }
 
-  const filteredProducts = category === 'todas'
-    ? products
-    : products.filter(product => product.gemFamily === category)
-
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <p className="text-center">Carregando...</p>
       </div>
     )
+  }
+
+  if (error) {
+    return <div className="p-4 text-red-600">Erro: {error}</div>
   }
 
   return (
@@ -83,44 +142,89 @@ export default function PedrasPage() {
         ))}
       </div>
 
-      {/* Lista de Produtos */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {filteredProducts.map((product) => (
-          <div
-            key={product.id}
-            className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+      {/* Filtros */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Peso (ct)
+          </label>
+          <select
+            value={filters.weight.join(',')}
+            onChange={(e) => toggleFilter('weight', e.target.value)}
+            className="w-full rounded-md border-gray-300"
           >
-            <Image
-              src={product.images[0]}
-              alt={product.name}
-              width={500}
-              height={500}
-              className="w-full h-auto object-cover rounded-lg"
-            />
-            <div className="p-4">
-              <h2 className="text-xl font-semibold text-purple-600 mb-2">
-                {product.name}
-              </h2>
-              <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                {product.description}
-              </p>
-              <div className="flex justify-between items-center">
-                <span className="text-lg font-bold text-purple-600">
-                  {new Intl.NumberFormat('pt-PT', {
+            <option value="all">Todos</option>
+            {Array.from(new Set(products.map(p => p.weight))).sort().map(weight => (
+              <option key={weight} value={weight?.toString()}>
+                {weight} ct
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Claridade
+          </label>
+          <select
+            value={filters.clarity.join(',')}
+            onChange={(e) => toggleFilter('clarity', e.target.value)}
+            className="w-full rounded-md border-gray-300"
+          >
+            <option value="all">Todas</option>
+            {Array.from(new Set(products.map(p => p.clarity))).sort().map(clarity => (
+              <option key={clarity} value={clarity}>
+                {clarity}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Lapidação
+          </label>
+          <select
+            value={filters.cut.join(',')}
+            onChange={(e) => toggleFilter('cut', e.target.value)}
+            className="w-full rounded-md border-gray-300"
+          >
+            <option value="all">Todas</option>
+            {Array.from(new Set(products.map(p => p.cut))).sort().map(cut => (
+              <option key={cut} value={cut}>
+                {cut}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Lista de Produtos */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="md:col-span-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {filteredProducts.map(product => (
+              <div key={product.id} className="border rounded-lg p-4">
+                <Image
+                  src={product.imageUrl}
+                  alt={product.name}
+                  width={400}
+                  height={400}
+                  className="w-full h-64 object-cover rounded-lg"
+                  priority
+                />
+                <h2 className="text-xl font-semibold mt-4">{product.name}</h2>
+                <p className="text-gray-600">{product.description}</p>
+                <p className="text-lg font-bold mt-2">
+                  {new Intl.NumberFormat('pt-BR', {
                     style: 'currency',
-                    currency: 'EUR'
+                    currency: 'BRL'
                   }).format(product.price)}
-                </span>
-                <Link
-                  href={`/pedras/${product.id}`}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  Ver Detalhes
-                </Link>
+                </p>
               </div>
-            </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
 
       {filteredProducts.length === 0 && (

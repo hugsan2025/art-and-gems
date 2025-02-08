@@ -23,14 +23,16 @@ export default function EditCarrierPage({ params }: { params: { id: string } }) 
     phone: '',
     active: true
   })
+  const [carrier, setCarrier] = useState(null)
 
   const fetchCarrier = useCallback(async () => {
     try {
-      const response = await fetch(`/api/admin/carriers/${params.id}`)
+      const response = await fetch(`/api/carriers/${params.id}`)
       const data = await response.json()
+      setCarrier(data)
       setFormData(data)
     } catch (error) {
-      console.error('Erro ao buscar transportadora:', error)
+      console.error('Error fetching carrier:', error)
     }
   }, [params.id])
 

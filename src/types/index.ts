@@ -3,20 +3,12 @@ export interface Product {
   name: string
   description: string
   price: number
-  images: string[]
-  image?: string
-  type: 'STONE' | 'COURSE'
-  gemFamily?: GemFamily
+  imageUrl: string
+  images?: string[]
   weight?: number
-  origin?: string
-  color?: string
   clarity?: string
   cut?: string
-  duration?: number
-  level?: 'BASIC' | 'INTERMEDIATE' | 'ADVANCED'
-  startDate?: Date
-  maxStudents?: number
-  categoryId: string
+  category: string
 }
 
 export enum GemFamily {
@@ -38,15 +30,10 @@ export interface Category {
 
 export interface Order {
   id: string
-  status: OrderStatus
+  items: OrderItem[]
+  status: string
   total: number
-  customerName: string
-  customerEmail: string
-  customerPhone?: string
-  carrierId?: string
-  trackingCode?: string
   createdAt: Date
-  updatedAt: Date
 }
 
 export enum OrderStatus {
@@ -58,40 +45,29 @@ export enum OrderStatus {
 
 export interface OrderItem {
   id: string
+  productId: string
   quantity: number
   price: number
-  orderId: string
-  productId: string
 }
 
 export interface Carrier {
   id: string
   name: string
-  nif: string
-  email: string
-  phone: string
-  address: string
-  postalCode: string
-  city: string
-  active: boolean
-  deliveryZones: DeliveryZone[]
+  zones: DeliveryZone[]
 }
 
 export interface DeliveryZone {
   id: string
   name: string
-  districts: string[]
-  basePrice: number
-  weightPrice: number
+  price: number
   carrierId: string
 }
 
 export interface Course {
-  id: number
-  title: string
+  id: string
+  name: string
   description: string
-  image: string
-  slug: string
+  price: number
 }
 
 export interface CartItem extends Product {

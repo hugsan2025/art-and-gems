@@ -5,11 +5,12 @@
   "installCommand": "npm install",
   "env": {
     "NEXT_PUBLIC_APP_URL": "https://artandgems.store",
-    "DATABASE_URL": "@database_url"
+    "PRISMA_GENERATE": "true"
   },
   "build": {
     "env": {
-      "DATABASE_URL": "@database_url"
+      "NEXT_PUBLIC_APP_URL": "https://artandgems.store",
+      "PRISMA_GENERATE": "true"
     }
   }
 } 

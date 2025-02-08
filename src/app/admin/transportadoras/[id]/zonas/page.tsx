@@ -1,164 +1,154 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Pencil, Trash2 } from 'lucide-react'
-import type { DeliveryZone, Carrier } from '@/types'
-import DeliveryZoneForm from '@/components/admin/DeliveryZoneForm'
+import { DeliveryZone, Carrier } from '@/types'
 
-interface PageProps {
+interface ZonesPageProps {
   params: {
     id: string
   }
 }
 
-export default function CarrierZonesPage({ params }: PageProps) {
+export default function ZonesPage({ params }: ZonesPageProps) {
+  const [carrier, setCarrier] = useState<Carrier | null>(null)
   const [zones, setZones] = useState<DeliveryZone[]>([])
-  const [showForm, setShowForm] = useState(false)
-  const [editingZone, setEditingZone] = useState<DeliveryZone | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const fetchZones = useCallback(async () => {
+  const fetchCarrier = async () => {
+    try {
+      const response = await fetch(`/api/carriers/${params.id}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch carrier')
+      }
+      const data = await response.json()
+      setCarrier(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    }
+  }
+
+  const fetchZones = async () => {
     try {
       const response = await fetch(`/api/carriers/${params.id}/zones`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch zones')
+      }
       const data = await response.json()
       setZones(data)
-    } catch (error) {
-      console.error('Error fetching zones:', error)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setLoading(false)
     }
-  }, [params.id])
+  }
 
   useEffect(() => {
-    fetchZones()
-  }, [fetchZones])
+    const loadData = async () => {
+      await fetchCarrier()
+      await fetchZones()
+    }
+    loadData()
+  }, [params.id])
 
-  const handleSaveZone = useCallback(async (zone: DeliveryZone) => {
+  const handleDelete = async (zoneId: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta zona?')) {
+      return
+    }
+
     try {
-      const url = zone.id
-        ? `/api/admin/carriers/${params.id}/zones/${zone.id}`
-        : `/api/admin/carriers/${params.id}/zones`
-
-      const response = await fetch(url, {
-        method: zone.id ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(zone),
+      const response = await fetch(`/api/carriers/${params.id}/zones/${zoneId}`, {
+        method: 'DELETE',
       })
 
-      if (response.ok) {
-        await fetchCarrier()
-        setShowForm(false)
-        setEditingZone(null)
+      if (!response.ok) {
+        throw new Error('Failed to delete zone')
       }
-    } catch (error) {
-      console.error('Erro ao salvar zona:', error)
+
+      setZones(zones.filter(zone => zone.id !== zoneId))
+    } catch (err) {
+      console.error('Error deleting zone:', err)
+      alert('Erro ao excluir zona')
     }
-  }, [params.id, fetchCarrier])
+  }
 
-  const handleDeleteZone = useCallback(async (zoneId: string) => {
-    if (!confirm('Tem certeza que deseja excluir esta zona?')) return
+  if (loading) {
+    return <div className="p-4">Carregando...</div>
+  }
 
-    try {
-      const response = await fetch(
-        `/api/admin/carriers/${params.id}/zones/${zoneId}`,
-        {
-          method: 'DELETE',
-        }
-      )
-
-      if (response.ok) {
-        await fetchCarrier()
-      }
-    } catch (error) {
-      console.error('Erro ao excluir zona:', error)
-    }
-  }, [params.id, fetchCarrier])
-
-  const handleCancelForm = useCallback(() => {
-    setShowForm(false)
-    setEditingZone(null)
-  }, [])
+  if (error) {
+    return <div className="p-4 text-red-600">Erro: {error}</div>
+  }
 
   if (!carrier) {
-    return <div>Carregando...</div>
+    return <div className="p-4">Transportadora não encontrada</div>
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center gap-4 mb-6">
-        <Link
-          href={`/admin/transportadoras/${params.id}`}
-          className="text-gray-500 hover:text-gray-700"
-        >
-          <ArrowLeft className="w-6 h-6" />
-        </Link>
+    <div className="container mx-auto p-4">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">
           Zonas de Entrega - {carrier.name}
         </h1>
+        <Link
+          href={`/admin/transportadoras/${params.id}/zonas/nova`}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Nova Zona
+        </Link>
       </div>
 
-      {showForm || editingZone ? (
-        <div className="bg-white p-6 rounded-lg shadow">
-          <DeliveryZoneForm
-            zone={editingZone || undefined}
-            onSave={handleSaveZone}
-            onCancel={handleCancelForm}
-          />
-        </div>
-      ) : (
-        <>
-          <button
-            onClick={() => setShowForm(true)}
-            className="mb-6 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Nova Zona
-          </button>
-
-          <div className="grid gap-4">
-            {carrier.deliveryZones.map(zone => (
-              <div
-                key={zone.id}
-                className="bg-white p-6 rounded-lg shadow"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold">{zone.name}</h3>
-                    <p className="text-sm text-gray-500">
-                      {zone.districts.join(', ')}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setEditingZone(zone)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                    >
-                      <Pencil className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteZone(zone.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Preço Base</p>
-                    <p className="font-semibold">€{zone.basePrice.toFixed(2)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Preço por Kg Adicional</p>
-                    <p className="font-semibold">€{zone.weightPrice.toFixed(2)}</p>
-                  </div>
-                </div>
-              </div>
+      <div className="bg-white shadow rounded-lg">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Nome
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Preço
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Prazo (dias)
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Ações
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {zones.map((zone: DeliveryZone) => (
+              <tr key={zone.id}>
+                <td className="px-6 py-4 whitespace-nowrap">{zone.name}</td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                  }).format(zone.price)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {zone.estimatedDays}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <Link
+                    href={`/admin/transportadoras/${params.id}/zonas/${zone.id}/editar`}
+                    className="text-yellow-600 hover:text-yellow-900 mr-4"
+                  >
+                    Editar
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(zone.id)}
+                    className="text-red-600 hover:text-red-900"
+                  >
+                    Excluir
+                  </button>
+                </td>
+              </tr>
             ))}
-          </div>
-        </>
-      )}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 } 

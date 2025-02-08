@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { MessageCircle, X, Send, Paperclip } from 'lucide-react'
 import { uploadToCloudinary } from '@/lib/cloudinary'
-import type { Product } from '@/types'
+import type { Product, Course } from '@/types'
 import Image from 'next/image'
 
 interface Message {
@@ -25,6 +25,27 @@ interface ProductSuggestion {
   description: string
 }
 
+interface ResponsePatterns {
+  default: string[]
+  greeting: string[]
+  price: string[]
+  courses: string[]
+  shipping: string[]
+  payment: string[]
+  schedule: string[]
+  suggestion: string[]
+  noResults: string[]
+  categories: string[]
+  priceRange: string[]
+  lapidaryWorkshop: string[]
+  lapidaryDetails: string[]
+  lapidaryPrice: string[]
+  specialization: string[]
+  duration: string[]
+  certification: string[]
+  [key: string]: string[] // Index signature for dynamic access
+}
+
 const gemCategories = {
   CITRINE: 'Citrino',
   AMETHYST: 'Ametista',
@@ -39,75 +60,91 @@ const gemCategories = {
 }
 
 // Sistema de respostas inteligentes
-const aiResponses = {
+const responses: ResponsePatterns = {
   default: [
-    'Como posso ajudar você hoje?',
-    'Conte-me mais sobre o que você procura.',
-    'Posso ajudar com mais alguma informação?'
+    "Desculpe, não percebi a sua pergunta. Pode reformular?",
+    "Não tenho a certeza sobre isso. Pode ser mais específico?",
+    "Hmm, isso é interessante, mas preciso de mais detalhes para ajudar melhor."
   ],
   greeting: [
-    'Olá! Como posso ajudar?',
-    'Bem-vindo à Art And Gems! Como posso ser útil?',
-    'Oi! Em que posso ajudar hoje?'
+    "Olá! Como posso ajudá-lo hoje?",
+    "Olá! Em que posso ser útil?",
+    "Bem-vindo! Como posso auxiliar?"
   ],
   price: [
-    'Nossos preços variam de acordo com o tipo e qualidade da pedra. Temos opções a partir de €100.',
-    'Cada pedra é única, com preços que refletem sua qualidade. Posso te mostrar algumas opções?',
-    'Temos pedras em diversas faixas de preço. Qual é seu orçamento?'
+    "Os nossos preços variam consoante o produto. Posso ajudá-lo a encontrar algo específico?",
+    "Temos opções para diversos orçamentos. Qual faixa de preço procura?",
+    "Os preços dependem muito do tipo e qualidade da pedra. Tem alguma em mente?"
   ],
   courses: [
-    'Oferecemos cursos para todos os níveis, desde iniciantes até avançado.',
-    'Nossos cursos incluem material didático e certificado. Quer saber mais sobre algum em específico?',
-    'Temos cursos práticos de lapidação com turmas reduzidas para melhor aprendizado.'
+    "Oferecemos diversos cursos de lapidação e joalharia. Quer saber mais sobre algum em específico?",
+    "Os nossos cursos são ministrados por profissionais experientes. Qual área lhe interessa?",
+    "Temos cursos para iniciantes e avançados. Qual o seu nível de experiência?"
   ],
   shipping: [
-    'Fazemos entregas para todo Portugal. O prazo médio é de 2-3 dias úteis.',
-    'O custo do envio é calculado com base no CEP e peso do produto.',
-    'Oferecemos envio seguro e rastreável para todas as encomendas.'
+    "Fazemos entregas para todo o Portugal. O prazo varia consoante a região.",
+    "Os portes são calculados com base no código postal de entrega. Quer fazer uma simulação?",
+    "Trabalhamos com diversas transportadoras para garantir a melhor entrega."
   ],
   payment: [
-    'Aceitamos cartões de crédito/débito, transferência bancária e MB Way.',
-    'Você pode parcelar suas compras em até 12x no cartão de crédito.',
-    'Oferecemos 5% de desconto para pagamentos por transferência bancária.'
+    "Aceitamos cartões de crédito, transferência bancária e MB WAY.",
+    "Oferecemos pagamento em prestações até 12x nos cartões de crédito.",
+    "Todas as formas de pagamento são processadas com segurança."
   ],
   schedule: [
-    'Estamos abertos de segunda a sexta das 10h às 19h, e sábados das 10h às 13h.',
-    'Você pode agendar uma visita presencial para ver nossas pedras.',
-    'Aos domingos e feriados estamos fechados.'
+    "O nosso horário de atendimento é de segunda a sexta, das 9h às 18h.",
+    "Aos sábados, atendemos das 9h às 13h.",
+    "Fora do horário comercial, pode deixar a sua mensagem que responderemos."
   ],
   suggestion: [
-    'Com base no que você procura, aqui estão algumas opções que podem te interessar:',
-    'Encontrei estas pedras que podem ser do seu interesse:',
-    'Temos estas opções que combinam com o que você procura:'
+    "Que tal dar uma vista de olhos nas nossas pedras mais populares?",
+    "Posso mostrar-lhe algumas sugestões baseadas no seu interesse.",
+    "Temos algumas recomendações que podem interessar-lhe."
   ],
   noResults: [
-    'Desculpe, não encontrei pedras exatamente com essas características. Que tal explorar outras opções?',
-    'No momento não temos pedras com essa descrição específica. Posso te mostrar alternativas similares?'
+    "Não encontrei exactamente o que procura, mas posso sugerir alternativas.",
+    "Hmm, não tenho essa informação específica, mas posso ajudá-lo de outra forma.",
+    "Que tal reformular a sua pergunta? Assim posso ajudá-lo melhor."
   ],
   categories: [
-    `Temos várias categorias de pedras preciosas, incluindo: ${Object.values(gemCategories).join(', ')}. Qual te interessa?`,
-    'Posso te mostrar pedras específicas de cada categoria. Qual você gostaria de ver?'
+    "Temos diversas categorias de pedras: preciosas, semipreciosas, em bruto e lapidadas.",
+    "Pode encontrar pedras por cor, tipo ou uso em joalharia.",
+    "As nossas categorias incluem também conjuntos para colecionadores."
   ],
   priceRange: [
-    'Temos pedras em diferentes faixas de preço:\n- Iniciante: €100 a €500\n- Intermediário: €500 a €2000\n- Premium: acima de €2000',
-    'Nossos preços variam conforme a categoria e qualidade. Qual faixa de preço você procura?'
+    "Temos pedras a partir de 100€ até peças exclusivas acima de 10.000€.",
+    "O investimento varia consoante a raridade e qualidade da pedra.",
+    "Podemos encontrar algo dentro do seu orçamento."
   ],
   lapidaryWorkshop: [
-    'Oferecemos uma experiência individual de lapidação de 3 horas, onde você aprenderá os fundamentos e lapidará sua própria pedra.',
-    'No workshop de lapidação, você terá uma experiência prática supervisionada e levará sua pedra lapidada para casa.',
-    'Nossa experiência de lapidação é personalizada e não requer conhecimento prévio em joalharia ou gemologia.'
+    "O nosso workshop de lapidação é perfeito para iniciantes!",
+    "Aprenderá técnicas básicas e avançadas de lapidação.",
+    "O curso inclui material didático e certificado."
   ],
   lapidaryDetails: [
-    'O workshop de lapidação inclui:\n- Sessão individual de 3 horas\n- Material didático\n- Pedra para lapidar\n- Certificado de participação',
-    'Durante o curso você aprenderá:\n- Fundamentos da lapidação\n- Técnicas básicas\n- Lapidação facetada ou cabuchão\n- Maximização do brilho e cor'
+    "O workshop tem duração de 40 horas.",
+    "As turmas são pequenas para melhor aproveitamento.",
+    "Fornecemos todas as ferramentas necessárias."
   ],
   lapidaryPrice: [
-    'O workshop individual de lapidação tem um valor de €290, incluindo todos os materiais necessários.',
-    'Investimento de €290 para uma experiência única de 3 horas, onde você criará sua própria pedra lapidada.'
+    "O investimento no workshop é de 2.500€,",
+    "Oferecemos condições especiais para grupos.",
+    "O valor inclui todo o material necessário."
   ],
   specialization: [
-    'Também oferecemos uma especialização intensiva de 1 semana para quem deseja se aprofundar na arte da lapidação.',
-    'Para formação mais completa, temos um curso intensivo de uma semana com técnicas avançadas de lapidação.'
+    "Temos cursos de especialização em diferentes técnicas.",
+    "A especialização é ideal para quem já tem experiência básica.",
+    "São módulos avançados com certificação."
+  ],
+  duration: [
+    "Os cursos têm duração variada, de 20 a 80 horas.",
+    "Pode escolher entre intensivo ou regular.",
+    "O cronograma é flexível para se adequar à sua rotina."
+  ],
+  certification: [
+    "Todos os cursos incluem certificado de conclusão.",
+    "A nossa certificação é reconhecida no mercado.",
+    "O certificado é emitido após avaliação prática."
   ]
 }
 
@@ -148,6 +185,26 @@ export default function SupportChat() {
       type: 'specialization'
     }
   ])
+
+  const responsePatterns: ResponsePatterns = {
+    default: [
+      "Desculpe, não entendi sua pergunta. Pode reformular?",
+      "Não tenho certeza sobre isso. Pode perguntar de outra forma?"
+    ],
+    greeting: [
+      "Olá! Como posso ajudar você hoje?",
+      "Oi! Em que posso ser útil?"
+    ],
+    // ... rest of patterns
+  }
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [])
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages.length, scrollToBottom])
 
   // Salvar mensagens quando houver alterações
   useEffect(() => {
@@ -224,12 +281,6 @@ export default function SupportChat() {
     addMessage('ai', 'Olá! Sou o assistente virtual da Art And Gems. Como posso ajudar?')
   }
 
-  useEffect(() => {
-    if (messages.length > 0) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }
-  }, [messages.length])
-
   const addMessage = (type: 'user' | 'ai', content: string) => {
     setMessages(prev => [...prev, {
       id: Date.now().toString(),
@@ -246,12 +297,12 @@ export default function SupportChat() {
 
     // Perguntas sobre categorias
     if (lowerMessage.includes('categorias') || lowerMessage.includes('tipos de pedra')) {
-      return aiResponses.categories[Math.floor(Math.random() * aiResponses.categories.length)]
+      return responses.categories[Math.floor(Math.random() * responses.categories.length)]
     }
 
     // Perguntas sobre faixas de preço
     if (lowerMessage.includes('faixa de preço') || lowerMessage.includes('quanto custa')) {
-      return aiResponses.priceRange[Math.floor(Math.random() * aiResponses.priceRange.length)]
+      return responses.priceRange[Math.floor(Math.random() * responses.priceRange.length)]
     }
 
     // Busca por produtos
@@ -265,8 +316,8 @@ export default function SupportChat() {
       Object.values(gemCategories).some(gem => lowerMessage.includes(gem.toLowerCase()))
     ) {
       return foundProducts.length > 0 
-        ? `${aiResponses.suggestion[Math.floor(Math.random() * aiResponses.suggestion.length)]}`
-        : `${aiResponses.noResults[Math.floor(Math.random() * aiResponses.noResults.length)]}`
+        ? `${responses.suggestion[Math.floor(Math.random() * responses.suggestion.length)]}`
+        : `${responses.noResults[Math.floor(Math.random() * responses.noResults.length)]}`
     }
 
     // Identificar o tipo de mensagem
@@ -286,7 +337,7 @@ export default function SupportChat() {
     }
 
     // Selecionar uma resposta aleatória do tipo identificado
-    const responses = aiResponses[responseType]
+    const responses = responses[responseType]
     const randomIndex = Math.floor(Math.random() * responses.length)
     return responses[randomIndex]
   }
@@ -401,36 +452,21 @@ export default function SupportChat() {
   )
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
-      {!isOpen ? (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="bg-purple-600 text-white p-4 rounded-full shadow-lg hover:bg-purple-700 transition-colors"
-        >
-          <MessageCircle className="w-6 h-6" />
-        </button>
-      ) : (
-        <div className="bg-white rounded-lg shadow-xl w-96 max-h-[600px] flex flex-col">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-4 rounded-t-lg flex justify-between items-center">
-            <h3 className="font-semibold">Chat Art And Gems</h3>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={clearHistory}
-                className="text-white hover:text-purple-200 text-sm"
-                title="Limpar histórico"
-              >
-                Limpar
-              </button>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="text-white hover:text-purple-200"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+    <div className={`fixed bottom-4 right-4 z-50 ${isOpen ? 'w-96' : 'w-auto'}`}>
+      {isOpen ? (
+        <div className="bg-white rounded-lg shadow-xl">
+          <div className="flex justify-between items-center p-4 border-b">
+            <h3 className="text-lg font-semibold">Suporte</h3>
+            <button onClick={() => setIsOpen(false)}>
+              <Image
+                src="/close-icon.png"
+                alt="Fechar"
+                width={24}
+                height={24}
+                className="hover:opacity-75"
+              />
+            </button>
           </div>
-
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[400px]">
             {messages.map((msg) => (
@@ -542,6 +578,18 @@ export default function SupportChat() {
             </div>
           </form>
         </div>
+      ) : (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="bg-blue-600 text-white p-4 rounded-full hover:bg-blue-700"
+        >
+          <Image
+            src="/chat-icon.png"
+            alt="Abrir chat"
+            width={24}
+            height={24}
+          />
+        </button>
       )}
 
       {/* Modal de Detalhes */}

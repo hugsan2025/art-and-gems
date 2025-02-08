@@ -5,134 +5,111 @@ import Link from 'next/link'
 import { Plus, Pencil, Trash } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import Image from 'next/image'
+import { Product } from '@/types'
 
-interface Product {
-  id: string
-  name: string
-  description: string
-  price: number
-  images: string[]
-  type: string
-  createdAt: string
-  category: {
-    name: string
-  }
-}
-
-export default function ProductsPage() {
+export default function ProductsAdmin() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/products')
+        if (!response.ok) {
+          throw new Error('Failed to fetch products')
+        }
+        const data = await response.json()
+        setProducts(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setLoading(false)
+      }
+    }
+
     fetchProducts()
   }, [])
 
-  const fetchProducts = async () => {
-    try {
-      const response = await fetch('/api/products')
-      const json = await response.json()
-      setProducts(json.data || [])
-    } catch (error) {
-      console.error('Erro ao buscar produtos:', error)
-      setError('Erro ao carregar produtos')
-    } finally {
-      setLoading(false)
+  const handleDelete = async (productId: string) => {
+    if (!confirm('Tem certeza que deseja excluir este produto?')) {
+      return
     }
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este produto?')) return
 
     try {
-      const response = await fetch(`/api/products/${id}`, {
-        method: 'DELETE'
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'DELETE',
       })
 
-      if (response.ok) {
-        setProducts(products.filter(p => p.id !== id))
-      } else {
-        throw new Error('Erro ao excluir produto')
+      if (!response.ok) {
+        throw new Error('Failed to delete product')
       }
-    } catch (error) {
-      console.error('Erro ao excluir produto:', error)
+
+      setProducts(products.filter(product => product.id !== productId))
+    } catch (err) {
+      console.error('Error deleting product:', err)
       alert('Erro ao excluir produto')
     }
   }
 
-  if (loading) return <div>Carregando...</div>
-  if (error) return <div className="text-red-500">{error}</div>
+  if (loading) {
+    return <div className="p-4">Carregando...</div>
+  }
+
+  if (error) {
+    return <div className="p-4 text-red-600">Erro: {error}</div>
+  }
 
   return (
-    <div className="p-6">
+    <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Produtos</h1>
-        <Link
-          href="/admin/produtos/novo"
-          className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2"
+        <h1 className="text-2xl font-bold">Gerenciar Produtos</h1>
+        <Link 
+          href="/admin/produtos/novo" 
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          <Plus className="w-4 h-4" />
           Novo Produto
         </Link>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-x-auto">
-        <table className="min-w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Imagem</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Nome</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Categoria</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Preço</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Data</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((product) => (
-              <tr key={product.id} className="border-b">
-                <td className="py-2">
-                  {product.images[0] && (
-                    <img
-                      src={product.images[0]}
-                      alt={product.name}
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                  )}
-                </td>
-                <td className="px-4 py-2">{product.name}</td>
-                <td className="px-4 py-2">
-                  {product.category?.name || 'Sem categoria'}
-                </td>
-                <td className="px-4 py-2">
-                  {new Intl.NumberFormat('pt-PT', {
-                    style: 'currency',
-                    currency: 'EUR'
-                  }).format(product.price)}
-                </td>
-                <td className="px-4 py-2">
-                  {format(new Date(product.createdAt), 'dd/MM/yyyy', { locale: ptBR })}
-                </td>
-                <td className="px-4 py-2">
-                  <div className="flex gap-2">
-                    <Link
-                      href={`/admin/produtos/${product.id}`}
-                      className="text-blue-600 hover:text-blue-700"
-                    >
-                      <Pencil className="w-5 h-5" />
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(product.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash className="w-5 h-5" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {products.map((product) => (
+          <div key={product.id} className="border rounded-lg p-4">
+            <div className="relative aspect-square mb-4">
+              <Image
+                src={product.imageUrl}
+                alt={product.name}
+                fill
+                className="object-cover rounded-lg"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
+            </div>
+            <h2 className="text-xl font-semibold">{product.name}</h2>
+            <p className="text-gray-600 mb-2">{product.description}</p>
+            <p className="text-lg font-bold mb-4">
+              {new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+              }).format(product.price)}
+            </p>
+            <div className="flex justify-end space-x-2">
+              <Link
+                href={`/admin/produtos/${product.id}/editar`}
+                className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+              >
+                Editar
+              </Link>
+              <button
+                onClick={() => handleDelete(product.id)}
+                className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )

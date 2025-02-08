@@ -7,34 +7,79 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("USER")
+  orders    Order[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Product {
   id          String      @id @default(cuid())
   name        String
-  description String      @db.Text
+  description String
   price       Float
+  imageUrl    String
   images      String[]
-  type        String      // "STONE" ou "COURSE"
-  slug        String      @unique
-  featured    Boolean     @default(false)
-  
-  // Campos específicos para pedras
-  gemFamily   String?     // CITRINE, EMERALD, etc
-  origin      String?
-  color       String?
-  clarity     String?
-  cut         String?     // Adicionado campo cut
+  category    String
   weight      Float?
-
-  // Relações
-  category    Category    @relation(fields: [categoryId], references: [id])
-  categoryId  String
+  clarity     String?
+  cut         String?
+  stock       Int         @default(0)
   orderItems  OrderItem[]
-  analytics   Analytics[]
-
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+}
 
-  @@index([categoryId])
+model Order {
+  id              String      @id @default(cuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id])
+  status          String      @default("PENDING")
+  total           Float
+  items           OrderItem[]
+  shippingAddress String?
+  paymentMethod   String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  order       Order   @relation(fields: [orderId], references: [id])
+  productId   String
+  product     Product @relation(fields: [productId], references: [id])
+  productName String
+  quantity    Int
+  price       Float
+}
+
+model Carrier {
+  id        String         @id @default(cuid())
+  name      String
+  email     String
+  phone     String
+  address   String
+  zones     DeliveryZone[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model DeliveryZone {
+  id            String   @id @default(cuid())
+  name          String
+  price         Float
+  estimatedDays Int
+  description   String?
+  carrierId     String
+  carrier       Carrier  @relation(fields: [carrierId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model Category {
@@ -44,42 +89,6 @@ model Category {
   products    Product[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-}
-
-model Order {
-  id                String      @id @default(cuid())
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-  status            String
-  total             Float
-  paymentMethod     String
-  bitcoinAddress    String?
-  customerName      String
-  customerEmail     String
-  customerPhone     String
-  shippingAddress   String
-  shippingCity      String
-  shippingPostalCode String
-  shippingCountry   String
-  items             OrderItem[]
-}
-
-model OrderItem {
-  id        String   @id @default(cuid())
-  quantity  Int
-  price     Float
-  order     Order    @relation(fields: [orderId], references: [id])
-  orderId   String
-  product   Product  @relation(fields: [productId], references: [id])
-  productId String
-}
-
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model Analytics {

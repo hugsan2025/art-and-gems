@@ -1,18 +1,22 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
-import type { Order } from '@/types'
+import type { Order, OrderItem } from '@/types'
 import { useRouter } from 'next/navigation'
 
-interface PageProps {
+interface OrderDetailsProps {
   params: {
     id: string
   }
+}
+
+interface OrderWithItems extends Order {
+  items: OrderItem[]
 }
 
 const statusOptions = [
@@ -22,18 +26,23 @@ const statusOptions = [
   { value: 'CANCELLED', label: 'Cancelado' }
 ]
 
-export default function OrderDetailsPage({ params }: PageProps) {
+export default function OrderDetails({ params }: OrderDetailsProps) {
   const router = useRouter()
-  const [order, setOrder] = useState<Order | null>(null)
+  const [order, setOrder] = useState<OrderWithItems | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchOrder = useCallback(async () => {
     try {
+      setLoading(true)
       const response = await fetch(`/api/orders/${params.id}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch order')
+      }
       const data = await response.json()
       setOrder(data)
-    } catch (error) {
-      console.error('Error fetching order:', error)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setLoading(false)
     }
@@ -63,113 +72,98 @@ export default function OrderDetailsPage({ params }: PageProps) {
   }
 
   if (loading) {
-    return (
-      <div className="p-6">
-        <p>Carregando detalhes do pedido...</p>
-      </div>
-    )
+    return <div className="p-4">Carregando...</div>
+  }
+
+  if (error) {
+    return <div className="p-4 text-red-600">Erro: {error}</div>
   }
 
   if (!order) {
-    return (
-      <div className="p-6">
-        <p>Pedido não encontrado</p>
-      </div>
-    )
+    return <div className="p-4">Pedido não encontrado</div>
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center gap-4 mb-6">
-        <Link
-          href="/admin/pedidos"
-          className="text-gray-500 hover:text-gray-700"
-        >
-          <ArrowLeft className="w-6 h-6" />
-        </Link>
-        <h1 className="text-2xl font-bold">Pedido #{order.id.slice(-6)}</h1>
-      </div>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-6">Detalhes do Pedido</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Detalhes do Pedido */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-lg font-semibold mb-4">Itens do Pedido</h2>
-            <div className="space-y-4">
-              {order.items.map((item) => (
-                <div key={item.id} className="flex gap-4">
-                  <div className="relative w-20 h-20">
-                    <Image
-                      src={item.product.images[0] || '/images/placeholder.jpg'}
-                      alt={item.product.name}
-                      fill
-                      className="object-cover rounded"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold">{item.product.name}</h3>
-                    <p className="text-sm text-gray-500">
-                      Quantidade: {item.quantity}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Preço: R$ {item.price.toFixed(2)}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold">
-                      R$ {(item.price * item.quantity).toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 pt-4 border-t">
-              <div className="flex justify-between">
-                <p className="font-semibold">Total</p>
-                <p className="font-semibold">R$ {order.total.toFixed(2)}</p>
-              </div>
-            </div>
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div>
+            <p className="text-gray-600">ID do Pedido</p>
+            <p className="font-semibold">{order.id}</p>
+          </div>
+          <div>
+            <p className="text-gray-600">Status</p>
+            <p className="font-semibold">{order.status}</p>
+          </div>
+          <div>
+            <p className="text-gray-600">Data</p>
+            <p className="font-semibold">
+              {new Date(order.createdAt).toLocaleDateString('pt-BR')}
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-600">Endereço de Entrega</p>
+            <p className="font-semibold">{order.shippingAddress || 'N/A'}</p>
           </div>
         </div>
 
-        {/* Informações do Cliente e Status */}
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-lg font-semibold mb-4">Status do Pedido</h2>
-            <select
-              value={order.status}
-              onChange={(e) => handleStatusChange(e.target.value)}
-              className="w-full border-gray-300 rounded-lg shadow-sm"
-            >
-              {statusOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+        <div className="mt-6">
+          <h2 className="text-lg font-semibold mb-4">Itens do Pedido</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Produto
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Quantidade
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Preço
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {order.items.map((item: OrderItem) => (
+                  <tr key={item.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {item.productName}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {item.quantity}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL'
+                      }).format(item.price)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL'
+                      }).format(item.price * item.quantity)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+        </div>
 
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-lg font-semibold mb-4">Informações do Cliente</h2>
-            <div className="space-y-2">
-              <p>
-                <span className="font-semibold">Nome:</span> {order.customerName}
-              </p>
-              <p>
-                <span className="font-semibold">Email:</span> {order.customerEmail}
-              </p>
-              <p>
-                <span className="font-semibold">Telefone:</span>{' '}
-                {order.customerPhone || 'Não informado'}
-              </p>
-              <p>
-                <span className="font-semibold">Data do Pedido:</span>{' '}
-                {format(new Date(order.createdAt), "dd/MM/yyyy 'às' HH:mm", {
-                  locale: ptBR,
-                })}
-              </p>
-            </div>
-          </div>
+        <div className="mt-6 text-right">
+          <p className="text-xl font-bold">
+            Total: {new Intl.NumberFormat('pt-BR', {
+              style: 'currency',
+              currency: 'BRL'
+            }).format(order.total)}
+          </p>
         </div>
       </div>
     </div>
